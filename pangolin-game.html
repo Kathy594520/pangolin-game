@@ -1,0 +1,735 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>穿山甲的回家之路 — 保育互動遊戲</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'Segoe UI', 'Noto Sans TC', sans-serif;
+    background: linear-gradient(145deg, #1a3a2a 0%, #2d5a3e 100%);
+    min-height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 20px;
+  }
+  .game-container {
+    background: #f5f0e1;
+    border-radius: 40px 40px 30px 30px;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+    max-width: 780px;
+    width: 100%;
+    overflow: hidden;
+    position: relative;
+  }
+  .header {
+    background: #4a7c5c;
+    padding: 14px 22px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    color: #fff;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+  .header h1 { font-size: 1.1rem; font-weight: 700; letter-spacing: 1px; }
+  .header-right { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+  .timer-box {
+    background: #f5e6c8;
+    color: #3d2b1f;
+    padding: 4px 14px;
+    border-radius: 30px;
+    font-weight: 700;
+    font-size: 0.95rem;
+    display: flex; align-items: center; gap: 6px;
+    min-width: 72px;
+    justify-content: center;
+  }
+  .timer-box.warning { background: #f8d7da; color: #b33; }
+  .score-box {
+    background: #f5e6c8;
+    color: #3d2b1f;
+    padding: 4px 14px;
+    border-radius: 30px;
+    font-weight: 700;
+    font-size: 0.95rem;
+    display: flex; align-items: center; gap: 6px;
+  }
+  .score-box .score-num {
+    transition: transform 0.3s ease;
+    display: inline-block;
+  }
+  .score-box .score-num.pop { transform: scale(1.5); }
+  .scene-area {
+    min-height: 420px;
+    padding: 25px 30px 20px;
+    position: relative;
+  }
+  .scene-illustration {
+    text-align: center;
+    margin-bottom: 14px;
+    font-size: 4rem;
+    line-height: 1.1;
+  }
+  .scene-title {
+    font-size: 1.4rem;
+    font-weight: 700;
+    color: #2d5a3e;
+    margin-bottom: 10px;
+    text-align: center;
+  }
+  .scene-text {
+    font-size: 1.02rem;
+    line-height: 1.7;
+    color: #3d2b1f;
+    margin-bottom: 16px;
+    background: rgba(255,255,240,0.7);
+    padding: 12px 16px;
+    border-radius: 14px;
+    border-left: 4px solid #4a7c5c;
+  }
+  .choices { display: flex; flex-direction: column; gap: 8px; }
+  .choice-btn {
+    background: #e8dcc8;
+    border: 2px solid #b8a88a;
+    border-radius: 14px;
+    padding: 12px 18px;
+    font-size: 0.98rem;
+    font-weight: 600;
+    color: #3d2b1f;
+    cursor: pointer;
+    transition: all 0.15s;
+    text-align: left;
+    position: relative;
+    overflow: hidden;
+  }
+  .choice-btn::before {
+    content: "";
+    position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255,255,240,0.3), transparent);
+    transform: translateX(-100%);
+    transition: transform 0.5s;
+  }
+  .choice-btn:hover:not(:disabled)::before { transform: translateX(100%); }
+  .choice-btn:hover:not(:disabled) {
+    background: #d4c4a8;
+    border-color: #4a7c5c;
+    transform: translateX(4px);
+  }
+  .choice-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+  .choice-btn.correct-disabled {
+    border-color: #2d7a4a; background: #d4edda; opacity: 1;
+  }
+  .choice-btn.wrong-disabled {
+    border-color: #b33; background: #f8d7da; opacity: 1;
+  }
+  .choice-btn .ripple {
+    position: absolute; border-radius: 50%;
+    background: rgba(74,124,92,0.25);
+    transform: scale(0); animation: rippleAnim 0.5s ease-out forwards;
+  }
+  @keyframes rippleAnim { to { transform: scale(4); opacity: 0; } }
+  .feedback {
+    margin-top: 14px; padding: 14px 18px;
+    border-radius: 14px; font-size: 0.95rem; line-height: 1.6;
+    display: none; animation: fadeSlide 0.35s ease-out;
+  }
+  @keyframes fadeSlide {
+    from { opacity: 0; transform: translateY(12px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  .feedback.show { display: block; }
+  .feedback.good { background: #d4edda; border: 2px solid #2d7a4a; color: #155724; }
+  .feedback.bad { background: #f8d7da; border: 2px solid #b33; color: #721c24; }
+  .feedback .fun-fact {
+    margin-top: 8px; padding: 8px 12px;
+    background: rgba(255,255,200,0.6); border-radius: 10px; font-size: 0.9rem;
+  }
+  .feedback .fun-fact::before { content: "💡 小知識："; font-weight: 700; }
+  .next-btn {
+    display: none; margin: 14px auto 0;
+    background: #4a7c5c; color: #fff; border: none;
+    border-radius: 40px; padding: 10px 36px;
+    font-size: 1.05rem; font-weight: 700; cursor: pointer;
+    transition: all 0.2s;
+  }
+  .next-btn:hover { background: #3a664a; transform: scale(1.04); }
+  .next-btn.show { display: block; animation: fadeSlide 0.3s ease-out; }
+  .progress-bar { height: 6px; background: #ddd; margin: 0 30px 16px; border-radius: 10px; overflow: hidden; }
+  .progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #4a7c5c, #7abf8a);
+    border-radius: 10px; transition: width 0.5s ease; width: 0%;
+  }
+  /* Timer bar inside progress */
+  .timer-bar-container { height: 6px; background: #ddd; margin: 0 30px 16px; border-radius: 10px; overflow: hidden; }
+  .timer-bar {
+    height: 100%; border-radius: 10px;
+    transition: width 1s linear;
+    width: 100%;
+  }
+  .timer-bar.safe { background: #4a7c5c; }
+  .timer-bar.warn { background: #e6a817; }
+  .timer-bar.danger { background: #b33; }
+
+  /* Result screen */
+  .result-screen {
+    text-align: center; padding: 25px 30px; display: none; position: relative;
+  }
+  .result-screen.show { display: block; animation: fadeSlide 0.5s ease-out; }
+  #confettiCanvas {
+    position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+    pointer-events: none; z-index: 2;
+  }
+  .result-emoji { font-size: 4.5rem; margin-bottom: 6px; position: relative; z-index: 3; }
+  .result-title { font-size: 1.6rem; font-weight: 700; color: #2d5a3e; margin-bottom: 6px; position: relative; z-index: 3; }
+  .result-score { font-size: 2.8rem; font-weight: 800; color: #4a7c5c; margin: 6px 0; position: relative; z-index: 3; }
+  .result-stats {
+    display: flex; justify-content: center; gap: 20px;
+    font-size: 0.9rem; color: #7a6b5a; margin: 4px 0 10px; position: relative; z-index: 3;
+  }
+  .result-stats span { background: #e8dcc8; padding: 4px 14px; border-radius: 20px; }
+  .badge-container {
+    display: flex; justify-content: center; gap: 8px; margin: 10px 0;
+    flex-wrap: wrap; position: relative; z-index: 3;
+  }
+  .badge {
+    display: inline-block; padding: 6px 16px; border-radius: 30px;
+    font-size: 0.85rem; font-weight: 700;
+  }
+  .badge.gold { background: #ffd700; color: #3d2b1f; }
+  .badge.silver { background: #c0c0c0; color: #333; }
+  .badge.bronze { background: #cd7f32; color: #fff; }
+  .result-desc {
+    font-size: 0.98rem; line-height: 1.6; color: #3d2b1f;
+    max-width: 480px; margin: 6px auto 14px; position: relative; z-index: 3;
+  }
+  .result-detail {
+    background: #e8dcc8; border-radius: 14px; padding: 14px;
+    margin: 10px 0; text-align: left; font-size: 0.9rem; line-height: 1.5;
+    position: relative; z-index: 3;
+  }
+  .result-detail span { display: inline-block; margin-right: 10px; }
+  .restart-btn {
+    background: #4a7c5c; color: #fff; border: none; border-radius: 40px;
+    padding: 12px 40px; font-size: 1.05rem; font-weight: 700;
+    cursor: pointer; transition: all 0.2s; position: relative; z-index: 3;
+  }
+  .restart-btn:hover { background: #3a664a; transform: scale(1.04); }
+  @media (max-width: 550px) {
+    .scene-area { padding: 18px 14px 16px; }
+    .header h1 { font-size: 0.95rem; }
+    .header-right { gap: 6px; }
+    .scene-title { font-size: 1.15rem; }
+    .scene-illustration { font-size: 3rem; }
+    .result-score { font-size: 2.2rem; }
+  }
+</style>
+</head>
+<body>
+
+<div class="game-container" id="app">
+  <div class="header">
+    <h1>🦔 穿山甲的回家之路</h1>
+    <div class="header-right">
+      <div class="timer-box" id="timerBox">⏱️ <span id="timerDisplay">15</span>s</div>
+      <div class="score-box">🫘 <span class="score-num" id="scoreDisplay">0</span></div>
+    </div>
+  </div>
+
+  <div class="timer-bar-container">
+    <div class="timer-bar safe" id="timerBar"></div>
+  </div>
+  <div class="progress-bar">
+    <div class="progress-fill" id="progressFill"></div>
+  </div>
+
+  <div class="scene-area" id="sceneArea"></div>
+
+  <div class="result-screen" id="resultScreen">
+    <canvas id="confettiCanvas"></canvas>
+    <div class="result-emoji" id="resultEmoji">🏆</div>
+    <div class="result-title" id="resultTitle">你完成了任務！</div>
+    <div class="result-score">
+      <span id="resultScore">0</span>
+      <span style="font-size:1rem;color:#7a6b5a;">/ 100 分</span>
+    </div>
+    <div class="result-stats">
+      <span>✅ 正確：<strong id="correctCount">0</strong></span>
+      <span>❌ 錯誤：<strong id="wrongCount">0</strong></span>
+    </div>
+    <div class="badge-container" id="badgeContainer"></div>
+    <div class="result-desc" id="resultDesc"></div>
+    <div class="result-detail" id="resultDetail"></div>
+    <button class="restart-btn" onclick="restartGame()">🔄 再玩一次</button>
+  </div>
+</div>
+
+<script>
+// ===== Sound Engine (Web Audio API) =====
+let audioCtx = null;
+function getAudioCtx() {
+  if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  return audioCtx;
+}
+function playTone(freq, duration, type, volume) {
+  try {
+    const ctx = getAudioCtx();
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.type = type || 'sine';
+    osc.frequency.setValueAtTime(freq, ctx.currentTime);
+    gain.gain.setValueAtTime(volume || 0.2, ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + duration);
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    osc.start(ctx.currentTime);
+    osc.stop(ctx.currentTime + duration);
+  } catch(e) {}
+}
+function playCorrect() {
+  playTone(523, 0.12, 'sine', 0.15);
+  setTimeout(() => playTone(659, 0.12, 'sine', 0.15), 100);
+  setTimeout(() => playTone(784, 0.2, 'sine', 0.15), 200);
+}
+function playWrong() {
+  playTone(330, 0.2, 'sawtooth', 0.1);
+  setTimeout(() => playTone(262, 0.35, 'sawtooth', 0.1), 150);
+}
+function playClick() { playTone(880, 0.04, 'sine', 0.08); }
+function playTimerWarning() { playTone(440, 0.08, 'square', 0.06); }
+function playFanfare() {
+  const notes = [523, 587, 659, 784, 659, 784, 1047];
+  notes.forEach((n, i) => setTimeout(() => playTone(n, 0.18, 'sine', 0.15), i * 100));
+}
+function playTimeout() {
+  playTone(200, 0.3, 'sawtooth', 0.1);
+  setTimeout(() => playTone(160, 0.5, 'sawtooth', 0.1), 250);
+}
+
+// ===== Confetti Engine =====
+let confettiAnimId = null;
+function startConfetti() {
+  const canvas = document.getElementById('confettiCanvas');
+  const rect = document.getElementById('resultScreen').getBoundingClientRect();
+  canvas.width = rect.width;
+  canvas.height = rect.height;
+  const ctx = canvas.getContext('2d');
+  const pieces = [];
+  const colors = ['#ffd700','#ff6b6b','#4a7c5c','#ffa94d','#74c0fc','#da77f2','#20c997'];
+  for (let i = 0; i < 120; i++) {
+    pieces.push({
+      x: Math.random() * canvas.width,
+      y: Math.random() * canvas.height - canvas.height,
+      w: 4 + Math.random() * 6,
+      h: 6 + Math.random() * 10,
+      color: colors[Math.floor(Math.random() * colors.length)],
+      vy: 1 + Math.random() * 2,
+      vx: (Math.random() - 0.5) * 1.5,
+      rot: Math.random() * 360,
+      vr: (Math.random() - 0.5) * 6,
+    });
+  }
+  let frame = 0;
+  function draw() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    frame++;
+    let active = false;
+    pieces.forEach(p => {
+      p.y += p.vy + 0.03 * frame;
+      p.x += p.vx;
+      p.rot += p.vr;
+      if (p.y < canvas.height + 20) active = true;
+      ctx.save();
+      ctx.translate(p.x, p.y);
+      ctx.rotate(p.rot * Math.PI / 180);
+      ctx.fillStyle = p.color;
+      ctx.fillRect(-p.w/2, -p.h/2, p.w, p.h);
+      ctx.restore();
+    });
+    if (active && frame < 300) confettiAnimId = requestAnimationFrame(draw);
+  }
+  if (confettiAnimId) cancelAnimationFrame(confettiAnimId);
+  draw();
+}
+function stopConfetti() {
+  if (confettiAnimId) { cancelAnimationFrame(confettiAnimId); confettiAnimId = null; }
+}
+
+// ===== Game Data =====
+const stages = [
+  {
+    id: 0, emoji: "🦔❓", title: "認識穿山甲",
+    text: "在台灣淺山森林中，住著一位身穿盔甲的神祕邻居⋯⋯<br>請問下列哪一項是穿山甲的正確特徵？",
+    choices: [
+      { label: "穿山甲是爬蟲類，全身都是冷的", correct: false },
+      { label: "穿山甲沒有牙齒，用長舌頭吃螞蟻", correct: true },
+      { label: "穿山甲跑得比獵豹還快", correct: false },
+      { label: "穿山甲是肉食性，愛吃大動物", correct: false }
+    ],
+    correctMsg: "答對了！穿山甲是哺乳類，沒有牙齒，舌頭可長達 20 公分，一天能吃掉上千萬隻螞蟻！",
+    wrongMsg: "可惜～穿山甲其實是 🐾 哺乳類，沒有牙齒，有一條又長又黏的舌頭用來舔食螞蟻和白蟻喔！",
+    funFact: "穿山甲的台語叫「鯪鯉」（ㄌㄚˇ ㄌㄧˋ），意思是「像鯉魚的穿山甲」！"
+  },
+  {
+    id: 1, emoji: "🌙🐜", title: "夜間覓食",
+    text: "夜晚降臨，小穿山甲「阿穿」肚子餓了，想去吃最愛的螞蟻大餐。<br>牠應該去哪裡找食物呢？",
+    choices: [
+      { label: "去高速公路旁邊的草地上找", correct: false },
+      { label: "去森林裡有枯木落葉的地方挖蟻巢", correct: true },
+      { label: "去學校操場挖洞", correct: false },
+      { label: "去海邊沙灘找白蟻", correct: false }
+    ],
+    correctMsg: "非常好！穿山甲最喜歡在有枯木落葉的森林底層覓食，那裡螞蟻和白蟻最多！",
+    wrongMsg: "穿山甲住在淺山森林，最愛在落葉堆和枯木附近尋找蟻巢。一隻穿山甲一年大約吃掉 3000 萬隻螞蟻喔！",
+    funFact: "穿山甲挖蟻巢時會閉上眼睛和耳朵，防止螞蟻跑進去，超聰明！"
+  },
+  {
+    id: 2, emoji: "🐕⚠️", title: "遭遇流浪狗",
+    text: "阿穿正在森林裡挖螞蟻，突然聞到一股陌生的氣味——有流浪狗靠近了！<br>穿山甲遇到危險時應該怎麼做？",
+    choices: [
+      { label: "張開嘴巴大吼嚇退狗", correct: false },
+      { label: "立刻蜷縮成球狀，用鱗片保護自己", correct: true },
+      { label: "爬到樹上跟狗比賽跑步", correct: false },
+      { label: "躺下來裝死", correct: false }
+    ],
+    correctMsg: "對！穿山甲沒有牙齒也不會吼叫，最厲害的防衛方式就是捲成球，用堅硬的鱗片保護柔軟的肚子！",
+    wrongMsg: "穿山甲的防身絕招就是「蜷縮成球」！可惜流浪狗還是常常咬傷穿山甲的尾巴，造成嚴重傷害⋯⋯",
+    funFact: "全臺救傷中心統計，超過 50% 穿山甲住院主因都是「被狗咬傷」。馬頭山曾發生小穿山甲「阿喬」和「花生」遭浪犬攻擊頭部消失的悲劇。不要餵食流浪狗，就是保護穿山甲！"
+  },
+  {
+    id: 3, emoji: "🐕🧠", title: "為什麼流浪狗是最大威脅？",
+    text: "根據研究，流浪狗已成為臺灣穿山甲生存的最大威脅。<br>請問下列哪一項「不是」流浪狗造成穿山甲受傷的原因？",
+    choices: [
+      { label: "狗會咬穿山甲的尾巴，導致母獸無法揹寶寶", correct: false },
+      { label: "狗會吃掉螞蟻，讓穿山甲沒有食物", correct: true },
+      { label: "狗會傳染疾病（如壁蝨傳播的病原體）", correct: false },
+      { label: "狗會和穿山甲競爭棲地", correct: false }
+    ],
+    correctMsg: "正確！穿山甲吃螞蟻、狗不吃螞蟻，所以狗不會搶穿山甲的食物。但狗會直接攻擊穿山甲！全臺救傷統計顯示超過 50% 穿山甲住院都是被狗咬傷。",
+    wrongMsg: "等一下～仔細想想，狗是肉食性動物，不吃螞蟻喔！但狗會咬穿山甲造成致命傷、傳染疾病、搶佔棲地這三項都是真實威脅。很多人以為路殺或盜獵最嚴重，但最新研究發現犬獸衝突才是潛藏的最大黑數！",
+    funFact: "臺灣目前有高達十幾萬隻遊蕩犬，龐大數量對淺山生態造成極大壓力。馬頭山的小穿山甲「阿喬」和「花生」準備探索世界時遭浪犬攻擊頭部消失⋯⋯源頭管理已快趕不上瀕危物種消失的速度。"
+  },
+  {
+    id: 4, emoji: "🚗🌲", title: "穿越馬路",
+    text: "阿穿想從這片森林到對面的樹林找食物，但是中間隔著一條馬路。<br>這時候阿穿應該怎麼做最安全？",
+    choices: [
+      { label: "晚上車少時慢慢爬過去", correct: false },
+      { label: "在原地等待好心人類幫忙", correct: false },
+      { label: "沿著森林邊緣走，找生態廊道或涵洞通過", correct: true },
+      { label: "用最快的速度衝過去", correct: false }
+    ],
+    correctMsg: "答對了！穿山甲雖然會過馬路，但最好利用「生態廊道」或排水涵洞安全通行。這就是為什麼要幫野生動物蓋安全通道！",
+    wrongMsg: "穿山甲爬得很慢，過馬路非常危險。每年都有許多穿山甲因為「路殺」死亡。減少道路開發、設置生態廊道才是解方！",
+    funFact: "科學家發現穿山甲不會刻意避開道路和聚落，牠們就和我們「里山」共存！所以開車經過淺山區要減速慢行喔。"
+  },
+  {
+    id: 4, emoji: "🪤💔", title: "可怕的陷阱",
+    text: "阿穿在草叢中聞到食物的味道，但附近被人偷放了捕獸鋏⋯⋯<br>如果你是穿山甲，該如何避免被獸鋏傷害？",
+    choices: [
+      { label: "用鼻子先聞一聞地面再前進", correct: false },
+      { label: "繞開有人走動痕跡和金屬味的地方", correct: true },
+      { label: "加速衝過去", correct: false },
+      { label: "叫同伴幫忙看一下", correct: false }
+    ],
+    correctMsg: "沒錯！穿山甲嗅覺靈敏，可以避開危險區域。但最好的方法是人類不要使用捕獸鋏——這在臺灣是違法的！",
+    wrongMsg: "捕獸鋏對穿山甲傷害極大，常造成斷肢或腳趾壞死。幸好臺灣已禁止販售和使用捕獸鋏！如果你發現了，請通報林業保育署。",
+    funFact: "穿山甲的前爪非常有力，專門用來挖蟻穴和挖洞穴居住。為了保護爪子不磨損，牠們走路是用「指節」著地，像在踮腳尖！"
+  },
+  {
+    id: 5, emoji: "🐾👶", title: "媽媽的尾巴",
+    text: "阿穿媽媽生了小寶寶！小穿山甲剛出生不久，需要緊緊跟著媽媽。<br>請問小穿山甲是怎麼跟著媽媽出門的？",
+    choices: [
+      { label: "騎在媽媽的背上", correct: false },
+      { label: "躲在媽媽的嘴巴裡", correct: false },
+      { label: "緊緊抓住媽媽的尾巴根部", correct: true },
+      { label: "跟在媽媽後面自己走", correct: false }
+    ],
+    correctMsg: "答對了！穿山甲寶寶會緊緊抓住媽媽的尾巴基部，讓媽媽揹著到處走。尾巴對穿山甲來說超級重要！",
+    wrongMsg: "穿山甲媽媽用尾巴揹著寶寶移動。如果媽媽的尾巴被狗咬斷了，就沒辦法帶寶寶覓食，小穿山甲很可能無法存活⋯⋯",
+    funFact: "臺北市立動物園全球首次成功人工哺育穿山甲寶寶「芎梧」和「梧空」，為保育寫下歷史！穿山甲一胎只生一個寶寶喔。"
+  },
+  {
+    id: 6, emoji: "📞🙏", title: "發現受傷穿山甲",
+    text: "某天放學後，你在路邊發現一隻蜷縮成球的穿山甲，看起來好像受傷了。<br>這時你應該怎麼做？",
+    choices: [
+      { label: "帶回家養起來，當寵物", correct: false },
+      { label: "拍照打卡上傳網路就好", correct: false },
+      { label: "通報1999或林業保育署，請專業人員處理", correct: true },
+      { label: "用樹枝戳牠看會不會動", correct: false }
+    ],
+    correctMsg: "太棒了！發現受傷野生動物時，最好的幫助方式就是通報專業單位，不要自己處理或帶回家！穿山甲是保育類，不可以飼養喔。",
+    wrongMsg: "穿山甲是 ✨保育類野生動物✨，不可以私自飼養或觸摸。正確做法是打 1999 或通報縣市政府農業局／林業保育署，讓專業獸醫來救牠！",
+    funFact: "臺灣的穿山甲救傷技術世界一流！臺北市立動物園和屏科大團隊已經成功野放許多康復的穿山甲回到山林。"
+  },
+  {
+    id: 7, emoji: "🌍💚", title: "一起守護穿山甲",
+    text: "學了這麼多穿山甲的知識，你覺得我們在日常生活中可以怎麼幫助穿山甲呢？<br>選出一個最有效的保育行動！",
+    choices: [
+      { label: "在山上放很多食物給穿山甲吃", correct: false },
+      { label: "不亂丟垃圾、不破壞森林、支持友善農作", correct: true },
+      { label: "把穿山甲影片轉發就夠了", correct: false },
+      { label: "在山裡養很多狗來保護穿山甲", correct: false }
+    ],
+    correctMsg: "太棒了！保護穿山甲的棲息地、選擇友善環境的農產品（如友善耕作、有機農業），就是最實際的保育行動！",
+    wrongMsg: "穿山甲只需要安安靜靜地在森林裡生活。減少棲地破壞、不亂丟垃圾、選擇友善農產品，就能幫助穿山甲和許多淺山動物！",
+    funFact: "臺灣目前粗估約有 2 萬隻穿山甲，可能是全世界穿山甲密度最高的地方！從年出口 6 萬張皮到今天的保育成果，臺灣是穿山甲的「保育基地」！"
+  },
+  {
+    id: 8, emoji: "📋🐕", title: "政府源頭管理政策",
+    text: "為了從根本解決遊蕩犬問題，臺灣政府推動多項源頭管理政策。<br>請問下列哪一項「不是」目前政府的具體管理措施？",
+    choices: [
+      { label: "強制寵物登記，嚴查棄養與未絕育放養", correct: false },
+      { label: "生態熱區內推動禁餵令，移除不當餵食點", correct: false },
+      { label: "在生態熱區進行犬隻清查、捕捉移置不回置", correct: false },
+      { label: "在山區設立免費大型犬飼養專區供民眾認養", correct: true }
+    ],
+    correctMsg: "答對了！政府政策是推動「衛星照護據點」和「多元認養」，而非設立大型飼養專區。源頭管理必須從人的行為下手：寵物登記、禁餵、熱區移置。",
+    wrongMsg: "再想想～政府的具體措施有：強制寵物登記與開罰棄養、在生態熱區推動禁餵令、進行犬隻清查與捕捉移置。但「設大型飼養專區」並非現行政策方向喔！",
+    funFact: "農業部呼籲民眾勿在生態熱區餵食任何動物，因為餵食會破壞絕育效果、提高遊蕩犬出生率。保護穿山甲，從不餵食流浪犬貓開始！"
+  }
+];
+
+// ===== Game State =====
+let currentStage = 0;
+let score = 0;
+let selected = false;
+let totalStages = stages.length;
+let resultData = [];
+let timerInterval = null;
+let timeLeft = 15;
+let TIMER_SECONDS = 15;
+let scorePopTimeout = null;
+
+// ===== Timer =====
+function startTimer() {
+  clearTimer();
+  timeLeft = TIMER_SECONDS;
+  updateTimerDisplay();
+  timerInterval = setInterval(() => {
+    timeLeft--;
+    updateTimerDisplay();
+    if (timeLeft <= 5 && timeLeft > 0) playTimerWarning();
+    if (timeLeft <= 0) {
+      clearTimer();
+      handleTimeout();
+    }
+  }, 1000);
+}
+function clearTimer() {
+  if (timerInterval) { clearInterval(timerInterval); timerInterval = null; }
+}
+function updateTimerDisplay() {
+  document.getElementById("timerDisplay").textContent = timeLeft;
+  const bar = document.getElementById("timerBar");
+  const pct = (timeLeft / TIMER_SECONDS) * 100;
+  bar.style.width = pct + "%";
+  bar.className = "timer-bar";
+  if (timeLeft <= 3) bar.classList.add("danger");
+  else if (timeLeft <= 7) bar.classList.add("warn");
+  else bar.classList.add("safe");
+  const box = document.getElementById("timerBox");
+  box.classList.toggle("warning", timeLeft <= 3);
+}
+function handleTimeout() {
+  if (selected) return;
+  playTimeout();
+  selected = true;
+  const s = stages[currentStage];
+  const btns = document.querySelectorAll(".choice-btn");
+  btns.forEach((btn, i) => {
+    btn.disabled = true;
+    if (s.choices[i].correct) btn.classList.add("correct-disabled");
+  });
+  const feedback = document.getElementById("feedback");
+  feedback.className = "feedback show bad";
+  feedback.innerHTML = `⏰ 時間到！<br>${s.wrongMsg} <div class="fun-fact">${s.funFact}</div>`;
+  resultData.push({ stage: currentStage, correct: false });
+  document.getElementById("nextBtn").classList.add("show");
+  document.getElementById("nextBtn").onclick = goNext;
+}
+
+// ===== Rendering =====
+function renderStage() {
+  clearTimer();
+  selected = false;
+  const s = stages[currentStage];
+  const progress = ((currentStage) / totalStages) * 100;
+  document.getElementById("progressFill").style.width = progress + "%";
+
+  const area = document.getElementById("sceneArea");
+  area.innerHTML = `
+    <div class="scene-illustration">${s.emoji}</div>
+    <div class="scene-title">第 ${currentStage+1}/${totalStages} 關：${s.title}</div>
+    <div class="scene-text">${s.text}</div>
+    <div class="choices" id="choicesContainer">
+      ${s.choices.map((c, i) => `
+        <button class="choice-btn" data-idx="${i}">${c.label}</button>
+      `).join("")}
+    </div>
+    <div class="feedback" id="feedback"></div>
+    <button class="next-btn" id="nextBtn">➡️ 繼續前進</button>
+  `;
+
+  document.querySelectorAll(".choice-btn").forEach(btn => {
+    btn.addEventListener("click", function(e) {
+      if (selected) return;
+      playClick();
+      const idx = parseInt(this.dataset.idx);
+      handleChoice(idx, e);
+    });
+  });
+
+  startTimer();
+}
+
+// ===== Choice Handling =====
+function handleChoice(idx, event) {
+  clearTimer();
+  selected = true;
+  const s = stages[currentStage];
+  const chosen = s.choices[idx];
+  const feedback = document.getElementById("feedback");
+  const btns = document.querySelectorAll(".choice-btn");
+
+  // Ripple effect
+  if (event) {
+    const btn = event.currentTarget;
+    const rect = btn.getBoundingClientRect();
+    const ripple = document.createElement("span");
+    ripple.className = "ripple";
+    const size = Math.max(rect.width, rect.height);
+    ripple.style.width = ripple.style.height = size + "px";
+    ripple.style.left = (event.clientX - rect.left - size/2) + "px";
+    ripple.style.top = (event.clientY - rect.top - size/2) + "px";
+    btn.appendChild(ripple);
+    setTimeout(() => ripple.remove(), 500);
+  }
+
+  btns.forEach((btn, i) => {
+    btn.disabled = true;
+    if (i === idx && chosen.correct) btn.classList.add("correct-disabled");
+    else if (i === idx && !chosen.correct) btn.classList.add("wrong-disabled");
+    else if (s.choices[i].correct) btn.classList.add("correct-disabled");
+  });
+
+  if (chosen.correct) {
+    score += 100 / totalStages;
+    feedback.className = "feedback show good";
+    feedback.innerHTML = `✅ ${s.correctMsg} <div class="fun-fact">${s.funFact}</div>`;
+    resultData.push({ stage: currentStage, correct: true });
+    playCorrect();
+  } else {
+    feedback.className = "feedback show bad";
+    feedback.innerHTML = `❌ ${s.wrongMsg} <div class="fun-fact">${s.funFact}</div>`;
+    resultData.push({ stage: currentStage, correct: false });
+    playWrong();
+  }
+
+  score = Math.round(score);
+  const scoreEl = document.getElementById("scoreDisplay");
+  scoreEl.textContent = score;
+  scoreEl.classList.add("pop");
+  if (scorePopTimeout) clearTimeout(scorePopTimeout);
+  scorePopTimeout = setTimeout(() => scoreEl.classList.remove("pop"), 300);
+
+  const nextBtn = document.getElementById("nextBtn");
+  nextBtn.classList.add("show");
+  nextBtn.onclick = goNext;
+}
+
+function goNext() {
+  clearTimer();
+  currentStage++;
+  selected = false;
+  if (currentStage >= totalStages) {
+    showResult();
+  } else {
+    renderStage();
+  }
+}
+
+// ===== Result =====
+function showResult() {
+  clearTimer();
+  stopConfetti();
+  document.getElementById("sceneArea").style.display = "none";
+  document.getElementById("progressFill").style.width = "100%";
+  const result = document.getElementById("resultScreen");
+  result.classList.add("show");
+
+  const pct = score;
+  document.getElementById("resultScore").textContent = score;
+  document.getElementById("scoreDisplay").textContent = score;
+
+  const corrects = resultData.filter(r => r.correct).length;
+  const wrongs = resultData.filter(r => !r.correct).length;
+  document.getElementById("correctCount").textContent = corrects;
+  document.getElementById("wrongCount").textContent = wrongs;
+
+  let emoji, title, desc, badgeHtml;
+  if (pct >= 90) {
+    emoji = "🏆";
+    title = "🦔 穿山甲博士！";
+    desc = "你對穿山甲瞭如指掌！你就是穿山甲的最佳守護者！快把這些知識分享給更多人吧！";
+    badgeHtml = `<span class="badge gold">🏅 穿山甲守護神</span>`;
+  } else if (pct >= 70) {
+    emoji = "🥈";
+    title = "🌿 保育小尖兵！";
+    desc = "你已經具備很好的保育知識！再學一點就能成為穿山甲博士！來看看你錯過了什麼～";
+    badgeHtml = `<span class="badge silver">🌱 保育小尖兵</span>`;
+  } else if (pct >= 50) {
+    emoji = "🥉";
+    title = "📖 保育學徒！";
+    desc = "你已經認識穿山甲的基礎知識，再接再厲！試試看重新挑戰，學更多保育知識！";
+    badgeHtml = `<span class="badge bronze">📚 保育學徒</span>`;
+  } else {
+    emoji = "📚";
+    title = "加油！再試一次！";
+    desc = "保護穿山甲需要更多人的認識和努力！再玩一次，你會學到更多～";
+    badgeHtml = `<span class="badge" style="background:#888;color:#fff;">🌱 學習中</span>`;
+  }
+
+  document.getElementById("resultEmoji").textContent = emoji;
+  document.getElementById("resultTitle").textContent = title;
+  document.getElementById("resultDesc").textContent = desc;
+  document.getElementById("badgeContainer").innerHTML = badgeHtml;
+
+  let detail = "";
+  stages.forEach((s, i) => {
+    const r = resultData[i];
+    const status = r && r.correct ? "✅" : "❌";
+    detail += `<span>${status} ${s.title}</span>`;
+  });
+  document.getElementById("resultDetail").innerHTML = detail + "<br><br>" +
+    "💡 臺灣穿山甲小檔案：<br>" +
+    "• 保育等級：🟡 二級珍貴稀有保育類<br>" +
+    "• IUCN 狀態：🔴 極度瀕危（CR）<br>" +
+    "• 主食：🐜 螞蟻、白蟻（一年吃 3000 萬隻）<br>" +
+    "• 臺灣數量：約 2 萬隻，是全球保育基地！<br>" +
+    "• 最大威脅：🐕 流浪犬攻擊（佔 50% 以上）<br>" +
+    "• 守護行動：🚗 減速慢行、📞 發現通報、🌳 支持友善農作";
+
+  playFanfare();
+  startConfetti();
+}
+
+function restartGame() {
+  clearTimer();
+  stopConfetti();
+  currentStage = 0;
+  score = 0;
+  selected = false;
+  resultData = [];
+  document.getElementById("scoreDisplay").textContent = "0";
+  document.getElementById("sceneArea").style.display = "block";
+  document.getElementById("resultScreen").classList.remove("show");
+  renderStage();
+}
+
+renderStage();
+</script>
+</body>
+</html>
