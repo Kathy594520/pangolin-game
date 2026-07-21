@@ -12,7 +12,8 @@
 
 ## 如何遊玩
 
-直接開啟 `pangolin-game.html` 即可。
+直接開啟 `index.html` 即可。  
+線上版：https://kathy594520.github.io/pangolin-game/
 
 ## 教材對應
 
